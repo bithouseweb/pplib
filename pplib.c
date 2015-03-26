@@ -203,6 +203,9 @@ void empty_buffers(compressor_obj_data *intern) {
 }
 /* }}} */
 
+/* {{{ internal debug function
+   finds out the index of a buffer in the list */
+#ifdef PPLIB_DEBUG
 int buffer_index(compressor_obj_data *intern, compressor_buffer *src) {
 	int id = 0;
 	
@@ -215,7 +218,8 @@ int buffer_index(compressor_obj_data *intern, compressor_buffer *src) {
 	
 	return id;
 }
-
+#endif
+/* }}} */
 
 /* {{{ internal function
    consume input until avail_in is zero and adds buffers as needed to the linked list */
