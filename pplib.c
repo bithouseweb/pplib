@@ -498,7 +498,7 @@ PHP_METHOD(Compressor, printOutput) {
 	uLong printed = 0;
 	
 	while (buffer != NULL && buffer->used != 0) {
-		php_write(&buffer->data, buffer->used);
+		PHPWRITE((const char *) &buffer->data, buffer->used);
 		printed += buffer->used;
 		
 		buffer = buffer->next;
