@@ -34,6 +34,17 @@
 #include <zlib.h>
 
 
+/* {{{ Memory management wrappers */
+static voidpf php_zlib_alloc(voidpf opaque, uInt items, uInt size) {
+	return (voidpf)safe_emalloc(items, size, 0);
+}
+
+static void php_zlib_free(voidpf opaque, voidpf address) {
+	efree((void*)address);
+}
+/* }}} */
+
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_compressor_append, 0, 0, 1)
 	ZEND_ARG_INFO(0, buffer)
 ZEND_END_ARG_INFO()
@@ -323,8 +334,8 @@ PHP_METHOD(Compressor, __construct) {
 	object = getThis();
 	intern = zend_object_store_get_object(object TSRMLS_CC);
 	
-	intern->stream.zalloc = Z_NULL;
-	intern->stream.zfree = Z_NULL;
+	intern->stream.zalloc = php_zlib_alloc;
+	intern->stream.zfree = php_zlib_free;
 	intern->stream.opaque = Z_NULL;
 	
 	intern->flushMode = Z_SYNC_FLUSH;
