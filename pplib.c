@@ -93,14 +93,14 @@ typedef struct _compressor_obj_data {
 
 
 
-zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC);
-compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size);
-compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
-void empty_buffers(compressor_obj_data *intern);
-void free_buffers(compressor_obj_data *intern);
-void consume_input(compressor_obj_data *intern, z_streamp stream, int flushMode);
-uLong output_size(compressor_obj_data *intern);
-compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
+static zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC);
+static compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size);
+static compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
+static void empty_buffers(compressor_obj_data *intern);
+static void free_buffers(compressor_obj_data *intern);
+static void consume_input(compressor_obj_data *intern, z_streamp stream, int flushMode);
+static uLong output_size(compressor_obj_data *intern);
+static compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
 
 
 
@@ -113,7 +113,7 @@ static void compressor_free_object_storage_handler(compressor_obj_data *intern T
     efree(intern);
 }
 
-zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC) {
+static zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC) {
     zend_object_value retval;
 
     compressor_obj_data *intern = emalloc(sizeof(compressor_obj_data));
@@ -138,7 +138,7 @@ zend_object_value compressor_create_object_handler(zend_class_entry *class_type 
 
 /* {{{ internal function
    adds a new buffer to the linked list */
-compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size) {
+static compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size) {
 	compressor_buffer *buffer = (compressor_buffer *) emalloc(sizeof(compressor_buffer) + sizeof(Bytef) *(size - 1));
 	buffer->next = NULL;
 	buffer->size = size;
@@ -159,7 +159,7 @@ compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size) {
 
 /* {{{ internal function
    finds the first buffer that has some space in it to be used */
-compressor_buffer *get_usable_buffer(compressor_obj_data *intern) {
+static compressor_buffer *get_usable_buffer(compressor_obj_data *intern) {
 	compressor_buffer *buffer = intern->head, *next;
 	
 	while(buffer != NULL) {
@@ -178,7 +178,7 @@ compressor_buffer *get_usable_buffer(compressor_obj_data *intern) {
 
 /* {{{ internal function
    frees all buffers */
-void free_buffers(compressor_obj_data *intern) {
+static void free_buffers(compressor_obj_data *intern) {
 	compressor_buffer *buffer = intern->head, *next;
 	
 	intern->stream.next_out = NULL;
@@ -199,7 +199,7 @@ void free_buffers(compressor_obj_data *intern) {
 
 /* {{{ internal function
    frees all buffers */
-void empty_buffers(compressor_obj_data *intern) {
+static void empty_buffers(compressor_obj_data *intern) {
 	compressor_buffer *buffer = intern->head;
 	
 	intern->stream.next_out = NULL;
@@ -217,7 +217,7 @@ void empty_buffers(compressor_obj_data *intern) {
 /* {{{ internal debug function
    finds out the index of a buffer in the list */
 #ifdef PPLIB_DEBUG
-int buffer_index(compressor_obj_data *intern, compressor_buffer *src) {
+static int buffer_index(compressor_obj_data *intern, compressor_buffer *src) {
 	int id = 0;
 	
 	compressor_buffer *buffer = intern->head;
@@ -234,7 +234,7 @@ int buffer_index(compressor_obj_data *intern, compressor_buffer *src) {
 
 /* {{{ internal function
    consume input until avail_in is zero and adds buffers as needed to the linked list */
-void consume_input(compressor_obj_data *intern, z_streamp stream, int flushMode) {
+static void consume_input(compressor_obj_data *intern, z_streamp stream, int flushMode) {
 	int state;
 	uInt avail_out = 0, needed;
 	compressor_buffer *buffer = intern->using;
@@ -289,7 +289,7 @@ void consume_input(compressor_obj_data *intern, z_streamp stream, int flushMode)
 
 /* {{{ internal function
    returns the output size till now */
-uLong output_size(compressor_obj_data *intern) {
+static uLong output_size(compressor_obj_data *intern) {
 	uLong size;
 	compressor_buffer *buffer;
 
