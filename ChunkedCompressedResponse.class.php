@@ -120,7 +120,7 @@
 		 * Call this function to flush a chunk
 		 */
 		public function flush_chunk() {
-			if($this->compressor !== null) {
+			if(isset($this->compressor)) {
 				$this->flush();
 				$this->start();
 			}
@@ -134,7 +134,7 @@
 		 * to the browser, or you can call it manually
 		 */
 		public function end_flush() {
-			if($this->documentEnd === false) {
+			if(isset($this->compressor) && $this->documentEnd === false) {
 				$this->documentEnd = true;
 				
 				$this->flush();
