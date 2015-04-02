@@ -96,15 +96,28 @@
 		 * Starts the buffering that allows this to work
 		 */
 		protected function start() {
-			ob_start();
+			ob_start([$this, 'ob_callback']);
+		}
+		
+		/**
+		 * Callback for Output Buffering, will receive all the contents from
+		 * the buffering of the page; will return an empty string because
+		 * the flushing is done in the flush method
+		 * 
+		 * @param  string $buffer the content of the page
+		 * @return string
+		 */
+		protected function ob_callback($buffer) {
+			$this->compressor->append($buffer);
+			
+			return '';
 		}
 		
 		/**
 		 * Flushes collected output to browser
 		 */
 		protected function flush() {
-			$this->compressor->append(ob_get_contents());
-			ob_end_clean();
+			ob_end_flush();
 			
 			if($this->documentEnd) {
 				$this->compressor->endDocument();
