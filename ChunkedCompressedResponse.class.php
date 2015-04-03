@@ -33,7 +33,23 @@
 	 * @author  Andrea <andrea@bhweb.it>
 	 */
 	class ChunkedCompressedResponse {
-		private $compressor, $documentEnd;
+		private $compressor, $documentEnd, $determineDone;
+		
+		/**
+		 * Mime in this list gets compressed; the match is performed as a search
+		 * so "text/" matches all "text/*"
+		 * @var array
+		 */
+		static $compressibleMime = [
+			'text/',
+			'application/json',
+			'application/xml',
+			'application/rss+xml',
+			'application/xrds+xml',
+			'application/javascript',
+			'image/svg+xml',
+			'application/octet-stream',
+		];
 		
 		/**
 		 * Content negotiation is done at construction time
@@ -41,19 +57,53 @@
 		public function __construct() {
 			$this->compressor = null;
 			$this->documentEnd = false;
+			$this->determineDone = false;
 			
 			ini_set('zlib.output_compression', 'Off');
 			ini_set('zlib.output_handler', '');
 			ini_set('output_buffering', 'Off');
 			ini_set('implicit_flush', 'Off');
 			
+			$this->start();
+			
+			register_shutdown_function([$this, 'end_flush']);
+		}
+		
+		/**
+		 * Allows manually stopping the compression
+		 * 
+		 * @return boolean true if it could stop; false if the first chunk has
+		 *                      been already sent by
+		 */
+		public function stop() {
+			if(!$this->determineDone) {
+				$this->compressor = null;
+				$this->determineDone = true;
+				
+				if(ob_get_level() !== 0) {
+					ob_end_flush();
+				}
+				
+				return true;
+			}
+			
+			return $this->compressor === null;
+		}
+		
+		/**
+		 * Calls the compression determination and eventually stops output
+		 * buffering
+		 * 
+		 * @return void
+		 */
+		protected function startupCompression() {
 			$this->determineCompression();
 			
-			if($this->compressor !== null) {
-				register_shutdown_function([$this, 'end_flush']);
-				
-				$this->start();
+			if($this->compressor === null && ob_get_level() !== 0) {
+				ob_end_flush();
 			}
+			
+			$this->determineDone = true;
 		}
 		
 		/**
@@ -62,17 +112,34 @@
 		protected function determineCompression() {
 			$headers = headers_list();
 			
-			// Allows setting the compression from outside
+			// Checks headers to see if someone is already doing compression
+			// or sending files or sending incompressible data
 			foreach ($headers as $header) {
-				if(preg_match('/^Content-Encoding: +(.+)$/i', $header, $matches)) {
-					if($matches[1] === 'gzip') {
-						$this->compressor = new Compressor(Compressor::FORMAT_GZIP);
+				if(stripos($header, 'Content-Type:') === 0) {
+					$compressible = false;
+					foreach (self::$compressibleMime as $mime) {
+						if(strpos($header, $mime, 14) !== false) {
+							$compressible = true;
+							break;
+						}
 					}
-					else if($matches[1] === 'deflate') {
-						$this->compressor = new Compressor(Compressor::FORMAT_ZLIB);
+					
+					if(!$compressible) {
+						return;
 					}
-					break;
 				}
+				else if(stripos($header, 'Content-Length:') === 0 || stripos($header, 'X-Sendfile:')) {
+					return;
+				}
+				else if(preg_match('/^Content-Encoding: +(.+)$/i', $header, $matches)) {
+					if($matches[1] !== 'identity') {
+						return;
+					}
+				}
+			}
+			
+			if(isset($format)) {
+				$this->compressor = new Compressor($format);
 			}
 			
 			// Compression negotiation
@@ -108,9 +175,13 @@
 		 * @return string
 		 */
 		protected function ob_callback($buffer) {
-			$this->compressor->append($buffer);
+			if(isset($this->compressor)) {
+				$this->compressor->append($buffer);
+				
+				return '';
+			}
 			
-			return '';
+			return $buffer;
 		}
 		
 		/**
@@ -133,6 +204,10 @@
 		 * Call this function to flush a chunk
 		 */
 		public function flush_chunk() {
+			if(!$this->determineDone) {
+				$this->startupCompression();
+			}
+			
 			if(isset($this->compressor)) {
 				$this->flush();
 				$this->start();
@@ -147,6 +222,10 @@
 		 * to the browser, or you can call it manually
 		 */
 		public function end_flush() {
+			if(!$this->determineDone) {
+				$this->startupCompression();
+			}
+			
 			if(isset($this->compressor) && $this->documentEnd === false) {
 				$this->documentEnd = true;
 				
