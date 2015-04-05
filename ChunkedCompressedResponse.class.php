@@ -188,7 +188,9 @@
 		 * Flushes collected output to browser
 		 */
 		protected function flush() {
-			ob_end_flush();
+			if(ob_get_level() !== 0) {
+				ob_end_flush();
+			}
 			
 			if($this->documentEnd) {
 				$this->compressor->endDocument();
