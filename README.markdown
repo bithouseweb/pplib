@@ -13,10 +13,17 @@ flush part of your content early, while still compressing output. The full
 solution for this is implemented with the C extension and the PHP class
 `PPLib\ChunkedCompressedResponse` (included in the repository).
 
-This package is in its' first iteration. Our goal is to extensively test it
-on [PensieriParole](www.pensieriparole.it), our main website, which handles
+This package is now used on a live website:
+[PensieriParole](www.pensieriparole.it), our main website, which handles
 300k pages each day. Preliminary testing shows that, by using this solution,
-we can save ~10ms on TTFB.
+we can save ~10ms on TTFB, this mostly depends how much early you can flush
+your head and how much things can be postponed.
+
+
+To do
+-----
+
+* Investigate different buffer size policies
 
 
 Installation
@@ -31,9 +38,9 @@ The first thing to do is compile and install the extension:
     $ make
     $ make install
 
-Then restart your webserver / php-fpm and check `phpinfo()` to see the
-extension is loaded. At this point, require the PHP class, and use it like
-this:
+Then restart your webserver / php-fpm and check `phpinfo()`, or `php -i | less`
+to see if the extension was loaded. At this point, require the PHP class, and use
+it like this:
 
 ```php
 require(PATH_TO_CLASS . 'ChunkedCompressedResponse.class.php');
