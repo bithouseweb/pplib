@@ -56,6 +56,12 @@
 		 */
 		public function __construct() {
 			$this->compressor = null;
+			
+			if(isset($_SERVER['TERM'])) {
+				$this->determineDone = true;	
+				return;
+			}
+			
 			$this->documentEnd = false;
 			$this->determineDone = false;
 			
