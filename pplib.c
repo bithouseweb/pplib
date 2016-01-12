@@ -82,18 +82,18 @@ typedef struct _compressor_buffer {
 } compressor_buffer;
 
 typedef struct _compressor_obj_data {
-	zend_object std;
 	z_stream stream;
 	int flushMode;
 	uint8_t format;
 	compressor_buffer *head;
 	compressor_buffer *tail;
 	compressor_buffer *using;
+	zend_object std;
 } compressor_obj_data;
 
 
 
-static zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC);
+static zend_object *compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC);
 static compressor_buffer *add_buffer(compressor_obj_data *intern, uInt size);
 static compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
 static void empty_buffers(compressor_obj_data *intern);
@@ -103,36 +103,43 @@ static uLong output_size(compressor_obj_data *intern);
 static compressor_buffer *get_usable_buffer(compressor_obj_data *intern);
 
 
+static inline compressor_obj_data *compressor_fetch_object(zend_object *obj) {
+      return (compressor_obj_data *)((char *)obj - XtOffsetOf(compressor_obj_data, std));
+}
+ 
+#define Z_COMPRESSOR_OBJ_P(zv) compressor_fetch_object(Z_OBJ_P(zv));
 
 
-static void compressor_free_object_storage_handler(compressor_obj_data *intern TSRMLS_DC) {
-    zend_object_std_dtor(&intern->std TSRMLS_CC);
+static void compressor_free_object_storage_handler(zend_object *obj TSRMLS_DC) {
+    zend_object_std_dtor(obj TSRMLS_CC);
     
+    compressor_obj_data *intern = compressor_fetch_object(obj);
     deflateEnd(&(intern->stream));
     free_buffers(intern);
     efree(intern);
 }
 
-static zend_object_value compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC) {
-    zend_object_value retval;
-
-    compressor_obj_data *intern = emalloc(sizeof(compressor_obj_data));
+static zend_object *compressor_create_object_handler(zend_class_entry *class_type TSRMLS_DC) {
+    compressor_obj_data *intern = ecalloc(1, sizeof(compressor_obj_data) + zend_object_properties_size(class_type));
     memset(intern, 0, sizeof(compressor_obj_data));
 
     zend_object_std_init(&intern->std, class_type TSRMLS_CC);
 
-    object_properties_init(&intern->std, class_type);
+    compressor_object_handlers.offset = XtOffsetOf(compressor_obj_data, std);
+    compressor_object_handlers.free_obj = compressor_free_object_storage_handler;
+
+    /*object_properties_init(&intern->std, class_type);
 
     retval.handle = zend_objects_store_put(
         intern,
         (zend_objects_store_dtor_t) zend_objects_destroy_object,
         (zend_objects_free_object_storage_t) compressor_free_object_storage_handler,
         NULL TSRMLS_CC
-    );
+    );*/
 
-    retval.handlers = &compressor_object_handlers;
+    intern->std.handlers = &compressor_object_handlers;
 
-    return retval;
+    return &intern->std;
 }
 
 
@@ -308,7 +315,6 @@ static uLong output_size(compressor_obj_data *intern) {
 /* {{{ proto string __construct(int format = FORMAT_GZIP, int level = -1)
    construct the Compressor class, with the given compression level (defaults to -1 = determined by zlib) */
 PHP_METHOD(Compressor, __construct) {
-	zval *object;
 	long level, format;
 	compressor_obj_data *intern;
 
@@ -331,8 +337,7 @@ PHP_METHOD(Compressor, __construct) {
 			level = Z_DEFAULT_COMPRESSION;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	intern->stream.zalloc = php_zlib_alloc;
 	intern->stream.zfree = php_zlib_free;
@@ -356,7 +361,6 @@ PHP_METHOD(Compressor, __construct) {
 /* {{{ proto string append(string data)
    adds the specified data to the compressed stream */
 PHP_METHOD(Compressor, append) {
-	zval *object;
 	char *data;
 	int len;
 	compressor_obj_data *intern;
@@ -370,8 +374,7 @@ PHP_METHOD(Compressor, append) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	z_streamp stream = &(intern->stream);
 
@@ -389,15 +392,13 @@ PHP_METHOD(Compressor, append) {
 /* {{{ proto string endDocument()
    marks the end of the document requesting for a finish flush */
 PHP_METHOD(Compressor, endDocument) {
-	zval *object;
 	compressor_obj_data *intern;
 
 	if (ZEND_NUM_ARGS() != 0) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	intern->flushMode = Z_FINISH;
 }
@@ -406,15 +407,13 @@ PHP_METHOD(Compressor, endDocument) {
 /* {{{ proto string getOutputSize()
    flushes the output and returns its size */
 PHP_METHOD(Compressor, getOutputSize) {
-	zval *object;
 	compressor_obj_data *intern;
 
 	if (ZEND_NUM_ARGS() != 0) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	consume_input(intern, &(intern->stream), intern->flushMode);
 	
@@ -425,15 +424,13 @@ PHP_METHOD(Compressor, getOutputSize) {
 /* {{{ proto string getFormat()
    returns the format passed when constructing the object */
 PHP_METHOD(Compressor, getFormat) {
-	zval *object;
 	compressor_obj_data *intern;
 
 	if (ZEND_NUM_ARGS() != 0) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	RETURN_LONG(intern->format);
 }
@@ -442,24 +439,23 @@ PHP_METHOD(Compressor, getFormat) {
 /* {{{ proto string getOutput()
    returns the output as a string and empties buffers */
 PHP_METHOD(Compressor, getOutput) {
-	zval *object;
 	compressor_obj_data *intern;
 	compressor_buffer *buffer;
 	uLong size;
-	char *retstr, *pos;
+	char *pos;
+	zend_string *retstr;
 
 	if (ZEND_NUM_ARGS() != 0) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	consume_input(intern, &(intern->stream), intern->flushMode);
 	
 	size = output_size(intern);
-	retstr = emalloc(sizeof(char) * size);
-	pos = retstr;
+	retstr = zend_string_alloc(size, 0);
+	pos = retstr->val;
 	
 	buffer = intern->head;
 	
@@ -474,14 +470,13 @@ PHP_METHOD(Compressor, getOutput) {
 	
 	empty_buffers(intern);
 	
-	RETURN_STRINGL(retstr, size, 0);
+	RETURN_STR(retstr);
 }
 /* }}} */
 
 /* {{{ proto string printOutput()
    returns the output as a string and empties buffers */
 PHP_METHOD(Compressor, printOutput) {
-	zval *object;
 	compressor_obj_data *intern;
 	compressor_buffer *buffer;
 
@@ -489,8 +484,7 @@ PHP_METHOD(Compressor, printOutput) {
 		WRONG_PARAM_COUNT;
 	}
 	
-	object = getThis();
-	intern = zend_object_store_get_object(object TSRMLS_CC);
+	intern = Z_COMPRESSOR_OBJ_P(getThis());
 	
 	consume_input(intern, &(intern->stream), intern->flushMode);
 	
@@ -546,6 +540,7 @@ PHP_MSHUTDOWN_FUNCTION(pplib) {
 PHP_MINFO_FUNCTION(pplib) {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "PPLib support", "enabled");
+	php_info_print_table_header(2, "PPLib version", PHP_PPLIB_VERSION);
 	php_info_print_table_header(2, "Linked zlib version", ZLIB_VERSION);
 	php_info_print_table_end();
 }

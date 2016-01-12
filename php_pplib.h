@@ -44,7 +44,7 @@ PHP_METHOD(Compressor, getOutputSize);
 PHP_METHOD(Compressor, getOutput);
 PHP_METHOD(Compressor, printOutput);
 
-#define PHP_PPLIB_VERSION "0.0.1"
+#define PHP_PPLIB_VERSION "0.0.2"
 
 #ifdef PHP_WIN32
 #	define PHP_PPLIB_API __declspec(dllexport)
