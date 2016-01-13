@@ -362,7 +362,7 @@ PHP_METHOD(Compressor, __construct) {
    adds the specified data to the compressed stream */
 PHP_METHOD(Compressor, append) {
 	char *data;
-	int len;
+	size_t len;
 	compressor_obj_data *intern;
 
 	if (ZEND_NUM_ARGS() == 1) {
