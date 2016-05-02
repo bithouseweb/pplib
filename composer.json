@@ -1,0 +1,21 @@
+{
+    "name": "bhweb/pplib",
+    "description": "Allows compression of output data while retaining ability to do intermediate flushes.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "bitHOUSEweb S.r.l.",
+            "email": "andrea@bhweb.it"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "PPLib\\": "src/PPLib/"
+        }
+    },
+    "require": {},
+    "suggest": {
+        "ext-pplib": "^0"
+    }
+}
