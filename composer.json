@@ -1,5 +1,5 @@
 {
-    "name": "bhweb/pplib",
+    "name": "bithouseweb/pplib",
     "description": "Allows compression of output data while retaining ability to do intermediate flushes.",
     "type": "library",
     "license": "MIT",
