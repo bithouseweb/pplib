@@ -11,7 +11,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "PPLib\\": "src/PPLib/"
+            "PPLib\\": "src/"
         }
     },
     "require": {},
