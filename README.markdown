@@ -1,7 +1,7 @@
 PPLib
 =====
 
-Provides `PPLib\ChunkedCompressedResponse` class which allows a chuncked
+Provides `PPLib\ChunkedCompressedResponse` class which allows a chunked
 encoding with compression, that allows flushing your content early while
 compressing it.
 At each intermediate flush, the receiver can still decode the sent data and
@@ -54,7 +54,7 @@ LICENSE
 
 The MIT License (MIT)
 
-Copyright (c) 2015 bitHOUSEweb S.r.l.
+Copyright (c) 2017 bitHOUSEweb S.r.l.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
