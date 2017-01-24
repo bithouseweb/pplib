@@ -1,49 +1,36 @@
 PPLib
 =====
 
-Provides `PPLib\Compressor` class which allows compression of data and 
-intermediate flushes. At each intermediate flush, the receiver can still decode
-data and have a partial document. This isn't possible using the existing zlib
-extension since the default zlib.output_compression buffers the entire webpage
-and outputs everyting in one go and, if you're willing to implement that using
-zlib streams, you cannot create a read/write stream.
+Provides `PPLib\ChunkedCompressedResponse` class which allows a chuncked
+encoding with compression, that allows flushing your content early while
+compressing it.
+At each intermediate flush, the receiver can still decode the sent data and
+have a partial document. This isn't possible using the existing zlib
+filters, since the default zlib.output_compression buffers the entire webpage
+and outputs everyting in one go. Previously this package used a custom C
+extension to create a partially-flushable zlib stream, but with PHP 7 this can
+be done with stock PHP.
 
-This is especially useful to allow a chunked encoding, useful if you want to
-flush part of your content early, while still compressing output. The full
-solution for this is implemented with the C extension and the PHP class
-`PPLib\ChunkedCompressedResponse` (included in the repository).
-
-This package is now used on a live website:
+This package is used on a live website:
 [PensieriParole](www.pensieriparole.it), our main website, which handles
 300k pages each day. Preliminary testing shows that, by using this solution,
 we can save ~10ms on TTFB, this mostly depends how much early you can flush
 your head and how much things can be postponed.
 
 
-To do
------
-
-* Investigate different buffer size policies
-
-
 Installation
 ------------
 
-The first thing to do is compile and install the extension:
+Just require the package using composer:
 
-    $ git clone https://github.com/bithouseweb/pplib.git pplib
-    $ cd pplib
-    $ phpize
-    $ ./configure --enable-pplib
-    $ make
-    $ make install
+```bash
+composer require bithouseweb/pplib
+````
 
-Then restart your webserver / php-fpm and check `phpinfo()`, or `php -i | less`
-to see if the extension was loaded. At this point, require the PHP class, and use
-it like this:
+At this point you can use the class like this:
 
 ```php
-require(PATH_TO_CLASS . 'ChunkedCompressedResponse.class.php');
+use PPLib\ChunkedCompressedResponse;
 
 $resp = new ChunkedCompressedResponse();
 

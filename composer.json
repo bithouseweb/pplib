@@ -14,8 +14,7 @@
             "PPLib\\": "src/"
         }
     },
-    "require": {},
-    "suggest": {
-        "ext-pplib": "^0"
+    "require": {
+        "php": ">=7.0.0"
     }
 }
