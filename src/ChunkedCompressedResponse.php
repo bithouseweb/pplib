@@ -86,7 +86,7 @@
 		 * @return boolean true if it could stop; false if the first chunk has
 		 *                      been already sent by
 		 */
-		public function stop() : boolean {
+		public function stop() : bool {
 			if(!$this->determineDone) {
 				$this->compressor = null;
 				$this->determineDone = true;
